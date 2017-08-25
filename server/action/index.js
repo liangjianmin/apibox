@@ -13,19 +13,23 @@ module.exports = function (app) {
         var author = req.body.author;
         var params = req.body.params;
         var response = req.body.response;
+        var reserror = req.body.reserror;
+
         if (link) {
             api.getApi(link, function (data) {
                 if (data.status) {
                     if (data.data.length > 0 && data.data[0].link == link) {
                         var id = data.data[0].id;
+
                         api.updateApi({
-                            sql: "update api SET `explain`=?,method=?,author=?,params=?,response=?,time=? WHERE id = ?",
+                            sql: "update api SET `explain`=?,method=?,author=?,params=?,response=?,reserror=?,time=? WHERE id = ?",
                             params: [
                                 explain,
                                 method,
                                 author,
                                 params,
                                 response,
+                                reserror,
                                 moment(new Date()).format("YYYY-MM-DD HH:mm:ss"),
                                 id
                             ]
@@ -41,6 +45,7 @@ module.exports = function (app) {
                                 author: author,
                                 params: params,
                                 response: response,
+                                reserror: reserror,
                                 from: 'api',
                                 time: moment(new Date()).format("YYYY-MM-DD HH:mm:ss")
                             },
@@ -90,4 +95,10 @@ module.exports = function (app) {
         }
     });
 
+    /**
+     * 删除接口api
+     */
+    app.get('/api', function (req, res, next) {
+        res.render('api');
+    });
 }

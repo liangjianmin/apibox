@@ -6,7 +6,9 @@
                     <template scope="props">
                         <el-form label-position="left" inline class="demo-table-expand">
                             <el-form-item label="接口响应内容（json）：">
-                                <div class="codeview"><pre>{{ props.row.response }}</pre></div>
+                                <div class="codeview">
+                                    <pre>{{ props.row.response }}</pre>
+                                </div>
                             </el-form-item>
                         </el-form>
                     </template>
@@ -25,9 +27,9 @@
                     </template>
                 </el-table-column>
             </el-table>
-             <div class="page-block">
-                 <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage"  :page-size="page.limit" layout="total,prev, pager, next, jumper" :total="page.count"></el-pagination>
-             </div>
+            <div class="page-block">
+                <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page.sync="currentPage" :page-size="page.limit" layout="total,prev, pager, next, jumper" :total="page.count"></el-pagination>
+            </div>
         </el-col>
     </el-row>
 </template>
@@ -52,7 +54,14 @@
         mounted(){
             this.init();
         },
-        watch: {},
+        watch: {
+            $route(to){
+                var path = to.path.substring(1);
+                if (path == 'home/apilist') {
+                    this.init();
+                }
+            }
+        },
         methods: {
             init(){
                 this.$store.dispatch({
@@ -101,13 +110,14 @@
     }
 </script>
 <style scoped>
-    .codeview{
+    .codeview {
         width: 800px;
         height: 600px;
         overflow: hidden;
         overflow-y: auto;
     }
-    .restext{
+
+    .restext {
         white-space: normal;
         display: -webkit-box;
         text-overflow: ellipsis;
@@ -115,11 +125,13 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
     }
+
     .page-block {
         padding: 40px 10px 0px 40px;
         text-align: right;
     }
-    .listpage{
+
+    .listpage {
         width: 100%;
         overflow: hidden;
         overflow-y: auto;

@@ -3,12 +3,10 @@
         <el-col :span="12" class="mainpage-l">
             <el-form :model="api" :rules="rules" ref="api" label-width="100px">
                 <el-form-item label="接口地址" prop="link">
-                    <el-autocomplete style="width: 400px;" v-model="api.link" placeholder="请填写接口地址" :fetch-suggestions="querySearchlink"
-                                     @select="handleSelectlink"></el-autocomplete>
+                    <el-autocomplete style="width: 400px;" v-model="api.link" placeholder="请填写接口地址" :fetch-suggestions="querySearchlink" @select="handleSelectlink"></el-autocomplete>
                 </el-form-item>
                 <el-form-item label="接口作者" prop="author" style="width: 500px;">
-                    <el-autocomplete style="width: 400px;" v-model="api.author" placeholder="请填写接口作者" :fetch-suggestions="querySearch"
-                                     @select="handleSelect"></el-autocomplete>
+                    <el-autocomplete style="width: 400px;" v-model="api.author" placeholder="请填写接口作者" :fetch-suggestions="querySearch" @select="handleSelect"></el-autocomplete>
                 </el-form-item>
                 <el-form-item label="接口说明" prop="explain" style="width: 500px;">
                     <el-input v-model="api.explain" placeholder="请填写接口说明" type="text"></el-input>
@@ -24,11 +22,11 @@
                         <el-input v-model="api.token" placeholder=""></el-input>
                     </el-form-item>
                 </template>
+                <el-form-item label="接口备注" prop="desc" style="width: 500px;">
+                    <el-input type="textarea" v-model="api.desc" placeholder="例如：该接口注意项"></el-input>
+                </el-form-item>
                 <el-form-item label="接口参数" prop="isParams">
                     <el-switch on-text="" off-text="" v-model="api.isParams" :change="onChange(api.isParams)"></el-switch>
-                </el-form-item>
-                <el-form-item label="接口备注" prop="desc" style="width: 500px;">
-                    <el-input type="textarea" v-model="api.desc"></el-input>
                 </el-form-item>
                 <template v-if="params_visible">
                     <el-form-item style="width:250px;white-space: nowrap" v-for="(domain, index) in api.domains" :label="'参数' + index" :key="domain.index">
@@ -38,7 +36,7 @@
                         <el-button style="margin-left: 10px" @click.prevent="removeDomain(domain)">删除</el-button>
                     </el-form-item>
                     <el-form-item>
-                        <el-button @click="addDomain">新增参数</el-button>
+                        <el-button @click="addDomain">点击新增参数</el-button>
                     </el-form-item>
                 </template>
                 <el-form-item>
@@ -46,7 +44,8 @@
                     <el-button @click="resetForm('api')">重置</el-button>
                 </el-form-item>
             </el-form>
-            <el-button v-if="saveflag" type="success" @click="onSave('api')" class="savebutton">保存接口数据</el-button>
+            <el-button v-if="saveflag" :disabled="!errorflage" type="success" @click="onSave('api')" class="savebutton">保存正常接口数据</el-button>
+            <el-button v-if="saveflag" :disabled="errorflage" type="danger" @click="onSave('api')" class="dangebutton">保存异常接口数据</el-button>
         </el-col>
         <el-col :span="12" class="codeview">
             <p ref="dom" v-show="flag"></p>
@@ -72,6 +71,8 @@
                 apidata: '',
                 paramsjson: '',
                 paramsexplain: '',
+                errorflage: true,
+                reserror: '',
                 api: {
                     link: '',
                     author: '',
@@ -161,9 +162,25 @@
                                 var key = res.headers['x-dola-edoc'];
                                 var data = res.data;
                                 var str = Util.decrypt(key, data, 'code');
-                                var objdata = JSON.parse(JSON.parse(str));
-                                var codedata = JSON.stringify(objdata, undefined, 4);
-
+                                //接口解析出错
+                                try {
+                                    var objdata = JSON.parse(JSON.parse(str));
+                                    var codedata = JSON.stringify(objdata, undefined, 4);
+                                    if (objdata.code == '0' && objdata.msg == 'success') {
+                                        self.errorflage = true;
+                                    } else {
+                                        self.errorflage = false;
+                                        self.reserror=codedata;
+                                    }
+                                }
+                                catch (err) {
+                                    self.loading = false;
+                                    self.$message({
+                                        type: 'error',
+                                        duration: 2000,
+                                        message: '请检查配置'
+                                    });
+                                }
                                 // 存取token
                                 if (link.indexOf('signin') != -1) {
                                     sessionStorage.removeItem('token');
@@ -202,9 +219,25 @@
                                 var key = res.headers['x-dola-edoc'];
                                 var data = res.data;
                                 var str = Util.decrypt(key, data, 'code');
-                                var objdata = JSON.parse(JSON.parse(str));
-                                var codedata = JSON.stringify(objdata, undefined, 4);
-
+                                //接口解析出错
+                                try {
+                                    var objdata = JSON.parse(JSON.parse(str));
+                                    var codedata = JSON.stringify(objdata, undefined, 4);
+                                    if (objdata.code == '0' && objdata.msg == 'success') {
+                                        self.errorflage = true;
+                                    } else {
+                                        self.reserror=codedata;
+                                        self.errorflage = false;
+                                    }
+                                }
+                                catch (err) {
+                                    self.loading = false;
+                                    self.$message({
+                                        type: 'error',
+                                        duration: 2000,
+                                        message: '请检查配置'
+                                    });
+                                }
                                 // 存取token
                                 if (link.indexOf('signin') != -1) {
                                     sessionStorage.removeItem('token');
@@ -258,7 +291,8 @@
                             method: self.api.method,
                             author: self.api.author,
                             params: self.paramsjson,
-                            response: self.apidata
+                            response: self.apidata,
+                            reserror: self.reserror
                         }).then((res) => {
                             if (res.data.status) {
                                 self.$message({
@@ -321,6 +355,12 @@
 <style scoped>
     .mainpage-l {
         position: relative;
+    }
+
+    .dangebutton {
+        position: absolute;
+        top: 85px;
+        right: 0;
     }
 
     .savebutton {
